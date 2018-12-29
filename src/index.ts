@@ -62,7 +62,7 @@ async function main() {
     return process.exit(0);
   }
 
-  let includes = tsConfig.config.include;
+  let includes: string[] = tsConfig.config.include;
   if (!includes) {
     console.error('No include found in tsconfig', tsConfig.path);
     return process.exit(0);
@@ -122,7 +122,7 @@ async function main() {
   }
 
   if (DEBUG) console.time('globs read');
-  allFiles = allFiles.concat(includes[0] + '/**/*.ts*').sort();
+  allFiles = allFiles.concat(includes.map(incl => incl + '/**/*.ts*')).sort();
   if (DEBUG) console.timeEnd('globs read');
 
   if (DEBUG) console.time('hashing');
@@ -149,7 +149,7 @@ async function main() {
       fs.writeFileSync(path.resolve(outDirFull, HASH_FILE_NAME), hash);
       await copyAsync(outDirFull, hashDir + '.tmp', {clean: true});
 
-      // mv is atomic
+      // rename is atomic
       await renameAsync(hashDir + '.tmp', hashDir);
     }
   }
