@@ -33,9 +33,9 @@ Then you can use it with [wsrun](https://github.com/whoeverest/wsrun)
 ## how it works
 
 1. When ctsc is used to build the package `A` for the first time, a `.ctsc.hash` file is inserted into the output, containing a hash computed from all the **input** files relevant to the compilation. The output directory `outDir` is additionally copied to `$CTSC_CACHE_DIR/$HASH`
-2. If a package's dependency `B` has a `.ctsc.hash` file, its included when calculating the
+2. If package `A`'s dependency, `B` has a `.ctsc.hash` file, its included when calculating the
 hash of package `A`
 3. Next time, if the combined hash of the inputs matches a directory in `CTSC_CACHE_DIR`, `tsc` is not invoked, instead, the outDir is copied from the cache directly to the destination.
-4. If a depedency changes, it will propagate a hash change throughout all its dependants. Therefore `ctsc` is very conservative and will rebuild a large portion of the subtree if an often used dependency has changed.
+4. If a depedency changes, it will propagate a hash change throughout all its dependants. Therefore `ctsc` is very conservative and will rebuild a large portion of the subtree if an often used dependency has changed. This scheme may change in the future.
 
 
