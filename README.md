@@ -12,6 +12,7 @@ Requirements:
 
 * (windows): WSL - windows subsystem for linux
 * git (for `git hash-object`)
+* bash with globstar support (e.g. bash 4 - mac users beware)
 
 ## usage
 
