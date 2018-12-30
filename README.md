@@ -1,6 +1,6 @@
 # ctsc
 
-Experimental caching TypeScript compiler suitable for monorepos
+Experimental caching TypeScript compiler suitable for monorepos and CI
 
 ## install
 
@@ -45,6 +45,6 @@ Then you can use it with [wsrun](https://github.com/whoeverest/wsrun)
 3. If package `A`'s dependency is `B`, the OHASH of `B` from its `.ctsc.hash` file is included when calculating the input hash `IHASH` hash of package `A`. In addition, all the sources specified in `include` are also considered when calculating the IHASH.
 4. If this input hash matches a directory in `$CTSC_CACHE_DIR` named `$IHASH`, `tsc` is not invoked. Instead, the outDir is copied from the cache directly to the destination.
 5. With this scheme, if a depedency has a change in its type definitions, it will propagate a rebuild to all its dependants. If the package doesn't have a types change, a rebuild will not propagate.
-6. If the dependants themselves end up with a type definition change, rebuild propagation will continue to propagate.
+6. If the dependants themselves end up with a type definition change, rebuild propagation will continue further.
 
 
