@@ -23,13 +23,11 @@ if (DEBUG && rt) rt.end()
 
 let mkdirpAsync = util.promisify(mkdirp)
 
-let copyAsync = async (src: string, dest: string, opts?:any) => {
+let copyAsync = async (src: string, dest: string, _opts?:any) => {
   if (DEBUG) console.log(`shopt -s globstar && cp -R ${src} ${dest}`)
   let switches = ''
-  //if (opts && opts.clean) switches += 'f'
-  if (opts && opts.update) switches += 'u'
   await mkdirpAsync(dest)
-  await cp.spawnSync('bash', ['-c', `cp -r${switches} ${src} ${dest}`])
+  await cp.spawnSync('bash', ['-c', `cp -Tr${switches} ${src} ${dest}`])
 }
 
 let readAsync = util.promisify(fs.readFile);
