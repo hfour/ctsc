@@ -4,9 +4,16 @@ Experimental caching TypeScript compiler suitable for monorepos
 
 ## install
 
-Currently not available on npm, must install via git
+Currently not available on npm, must clone via git
 
-    yarn add hfour/ctsc
+    git clone git@github.com:hfour/ctsc.git
+    cd ctsc
+    yarn tsc
+    yarn link
+
+Then in the folder where you use it
+
+    yarn link ctsc
 
 Requirements:
 
