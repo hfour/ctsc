@@ -156,10 +156,11 @@ async function main() {
     } else {
       let hashOut = hashSync([outDir], "-name '*.d.ts'");
       fs.writeFileSync(path.resolve(outDirFull, HASH_FILE_NAME), hashOut);
-      await copyAsync(outDirFull, hashDir + '.tmp');
+      let rnd = Math.random()
+      await copyAsync(outDirFull, hashDir + rnd);
 
       // rename is atomic
-      await renameAsync(hashDir + '.tmp', hashDir);
+      await renameAsync(hashDir + rnd, hashDir);
     }
   }
 }
