@@ -1,75 +1,95 @@
 #!/usr/bin/env node
 
-let DEBUG = process.env['DEBUG'] || false;
-
-
-if (DEBUG) {
-  var rt = require('require-times')()
-  rt.start()
-}
 import yargs from 'yargs';
 import path from 'path';
 import cp from 'child_process';
 import * as tscfg from 'tsconfig';
 import util from 'util';
-import fs, { mkdir } from 'fs';
+import fs from 'fs';
 import rrelative from 'require-relative';
-import mkdirp from 'mkdirp'
+import mkdirp from 'mkdirp';
 import os from 'os';
 
-//import cpx from 'cpx';
-if (DEBUG && rt) rt.end()
+let mkdirpAsync = util.promisify(mkdirp);
 
-// let copyAsync = util.promisify(cpx.copy) as (src: string, dst: string, opts?: cpx.AsyncOptions) => Promise<void>;
-
-let mkdirpAsync = util.promisify(mkdirp)
-
-let copyAsync = async (src: string, dest: string, _opts?:any) => {
-  if (DEBUG) console.log(`cp -Tr ${src} ${dest}`)
-  await mkdirpAsync(dest)
-  let copyProcess = await cp.spawnSync('bash', ['-c', `cp -Tr ${src} ${dest}`])
+let copyAsync = async (src: string, dest: string, _opts?: any) => {
+  await mkdirpAsync(dest);
+  let copyProcess = await cp.spawnSync('bash', ['-c', `cp -Tr ${src} ${dest}`]);
   if (copyProcess.status > 0) {
     console.error(copyProcess.stderr.toString());
-    process.exit(1)
+    process.exit(1);
   }
-}
+};
 
 let hashSync = (items: string[], criteria: string = '') => {
-  let cmd = `find ${items.join(' ')} -type f ${criteria} | xargs tail -n +1 | git hash-object --stdin`;
-  if (DEBUG) console.log(cmd);
+  let cmd = `find ${items.join(
+    ' '
+  )} -type f ${criteria} | xargs tail -n +1 | git hash-object --stdin`;
   let hashRes = cp.spawnSync('bash', ['-c', cmd], { encoding: 'utf8' });
   if (hashRes.status > 0) {
-    console.error(hashRes.stderr);
-    process.exit(1)
+    throw new Error(hashRes.stderr);
   }
   let hash = hashRes.stdout.trim();
   return hash;
-}
+};
 
 let readAsync = util.promisify(fs.readFile);
+let readdirAsync = util.promisify(fs.readdir);
 let existAsync = util.promisify(fs.exists);
 let renameAsync = util.promisify(fs.rename);
-
-let CTSC_TMP_DIR = process.env['CTSC_TMP_DIR'] || os.tmpdir() + '/ctsc';
-
-let argv = yargs.options({
-  p: {
-    type: 'string'
+let statAsync = util.promisify(fs.stat);
+let utimesAsync = util.promisify(fs.utimes);
+let rmdirAsync = (path: string) => {
+  let rm = cp.spawnSync('bash', ['-c', `rm -r ${path}`]);
+  if (rm.status > 0) {
+    throw new Error(rm.stderr.toString());
   }
-}).argv;
+};
 
-let HASH_FILE_NAME = '.ctsc.hash';
+const HASH_FILE_NAME = '.ctsc.hash';
 
 async function main() {
-  if (DEBUG) console.time('initial discovery');
+  let CTSC_TMP_DIR = process.env['CTSC_TMP_DIR'] || os.tmpdir() + '/ctsc';
+  let CTSC_TMP_MAX_ITEMS = Number(process.env['CTSC_TMP_MAX_ITEMS'] || '300');
+  let argv = yargs.options({
+    p: {
+      type: 'string'
+    },
+    clean: {
+      type: 'boolean'
+    }
+  }).argv;
+
+  if (argv.clean) await cleanup({ tmpdir: CTSC_TMP_DIR, maxItems: CTSC_TMP_MAX_ITEMS });
+  else await compile({ tsconfig: argv.p, tmpdir: CTSC_TMP_DIR });
+}
+
+async function cleanup(opts: { tmpdir: string; maxItems: number }) {
+  let hashList = await readdirAsync(opts.tmpdir);
+  let dirList = await Promise.all(
+    hashList.map(async hl => ({
+      path: path.resolve(opts.tmpdir, hl),
+      stat: await statAsync(path.resolve(opts.tmpdir, hl))
+    }))
+  );
+
+  let cleanup = dirList.sort((i1, i2) => i2.stat.atimeMs - i1.stat.atimeMs).slice(opts.maxItems);
+
+  console.log('Cleaning up', cleanup.length, 'cached items');
+  for (let item of cleanup) {
+    await rmdirAsync(item.path);
+  }
+}
+
+async function compile(opts: { tsconfig: string | undefined; tmpdir: string }) {
   let process_cwd = process.cwd();
   let tsConfig = null;
   try {
-    tsConfig = await tscfg.load(process_cwd, argv.p);
+    tsConfig = await tscfg.load(process_cwd, opts.tsconfig);
   } catch (e) {}
 
   if (!tsConfig || !tsConfig.config) {
-    console.error('No tsconfig.json found at', process_cwd, argv.p || '');
+    console.error('No tsconfig.json found at', process_cwd, opts.tsconfig || '');
     return process.exit(0);
   }
 
@@ -97,9 +117,7 @@ async function main() {
   let deps = Object.keys(pkgJson.dependencies || {}).concat(
     Object.keys(pkgJson.devDependencies || {})
   );
-  if (DEBUG) console.timeEnd('initial discovery');
 
-  if (DEBUG) console.time('tsconfigs resolve');
   let depsTsconfigs = deps.map(dep => {
     try {
       return { dep, dir: path.dirname(rrelative.resolve(dep + '/tsconfig.json', process_cwd)) };
@@ -107,9 +125,6 @@ async function main() {
       return null;
     }
   });
-  if (DEBUG) console.timeEnd('tsconfigs resolve');
-
-  if (DEBUG) console.time('tsconfigs read');
   let tsconfigs = await Promise.all(
     depsTsconfigs.map(async tsc => {
       if (!tsc) return null;
@@ -121,33 +136,25 @@ async function main() {
       }
     })
   );
-  if (DEBUG) console.timeEnd('tsconfigs read');
-
   let allFiles: string[] = [];
   for (let dep of tsconfigs) {
     if (dep && dep.config && dep.config.compilerOptions && dep.config.compilerOptions.outDir) {
       let item = path.resolve(dep.dir, dep.config.compilerOptions.outDir, HASH_FILE_NAME);
-      //if (!await existAsync(item)) continue;
+      if (!(await existAsync(item))) continue;
       allFiles.push(path.relative(process_cwd, item));
     }
   }
 
-  if (DEBUG) console.time('globs read');
   allFiles = allFiles.concat(includes).sort();
-  if (DEBUG) console.timeEnd('globs read');
 
-  if (DEBUG) console.time('hashing');
   let hash = hashSync(allFiles);
-  let hashDir = path.resolve(CTSC_TMP_DIR, hash);
+  let hashDir = path.resolve(opts.tmpdir, hash);
   let outDirFull = path.resolve(process_cwd, outDir);
-  if (DEBUG) console.timeEnd('hashing');
   if (await existAsync(hashDir)) {
-    if (DEBUG) console.time('copy from hashdir');
     await copyAsync(hashDir, outDirFull);
-    if (DEBUG) console.timeEnd('copy from hashdir');
-
+    await utimesAsync(hashDir, Date.now(), Date.now());
   } else {
-    let tsConfig = argv.p || 'tsconfig.json';
+    let tsConfig = opts.tsconfig || 'tsconfig.json';
     let out = cp.spawnSync('tsc', ['-p', tsConfig], { encoding: 'utf8' });
     if (out.stdout) console.log(out.stdout);
     if (out.stderr) console.error(out.stderr);
@@ -156,7 +163,7 @@ async function main() {
     } else {
       let hashOut = hashSync([outDir], "-name '*.d.ts'");
       fs.writeFileSync(path.resolve(outDirFull, HASH_FILE_NAME), hashOut);
-      let rnd = Math.random()
+      let rnd = Math.random();
       await copyAsync(outDirFull, hashDir + rnd);
 
       // rename is atomic
