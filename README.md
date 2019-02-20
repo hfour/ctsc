@@ -8,39 +8,30 @@ This acts as a drop-in replacement for TypeScript's own `tsc`. It will store the
 
 With the introduction of project mode, local caching was added, however, it has 3 significant restrictions:
 
-* it requires that all modules compile with declarations. This means that the toplevel application packages cannot easily be included in the project mode and have to be compiled separately.
-* it requires you to specify the dependant projects, even though they can be read from `package.json`. This means double book-keeping.
-* it only reuses files found in the local directory. This means it cannot be used to speed up compilation in CI by having a shared cache directory containing most of the unchanged modules, precompiled.
+- it requires that all modules compile with declarations. This means that the toplevel application packages cannot easily be included in the project mode and have to be compiled separately.
+- it requires you to specify the dependant projects, even though they can be read from `package.json`. This means double book-keeping.
+- it only reuses files found in the local directory. This means it cannot be used to speed up compilation in CI by having a shared cache directory containing most of the unchanged modules, precompiled.
 
 ctsc has a different set of limitations, which are somewhat less restrictive:
 
-* it requires the `outDir` setting, so it can more easily cache the output directory properly. This
-limitation may be removable in the future if we decide to add a filter of the files to copy, as well
-as use a better copying solution such as `rsync` or `cpx` (slow)
-* it requires the `include` setting, so it can more easily read all the inputs. This limitation may
-also be removable in the future if we decide to add a filter on the files to use when calculating
-the input hash.
+- it requires the `outDir` setting, so it can more easily cache the output directory properly. This
+  limitation may be removable in the future if we decide to add a filter of the files to copy, as well
+  as use a better copying solution such as `rsync` or `cpx` (slow)
+- it requires the `include` setting, so it can more easily read all the inputs. This limitation may
+  also be removable in the future if we decide to add a filter on the files to use when calculating
+  the input hash.
 
 Most monorepo projects already specify an `outDir` as `build` and `include` directories (e.g. src,
 tests, etc) so we believe these limitations are ok. Let us know if you disagree.
 
 ## install
 
-Currently not available on npm, must clone via git
-
-    git clone git@github.com:hfour/ctsc.git
-    cd ctsc
-    yarn tsc
-    yarn link
-
-Then in the folder where you use it
-
-    yarn link ctsc
+    yarn add ctsc
 
 Requirements:
 
-* (windows): WSL - windows subsystem for linux (find, xargs, tail)
-* git (for `git hash-object`)
+- (windows): WSL - windows subsystem for linux (find, xargs, tail)
+- git (for `git hash-object`)
 
 ## usage
 
@@ -50,8 +41,8 @@ Within a package dir:
 
 The package must have at least the following configuration in tsconfig:
 
-* include - must be an array of directories or files to include
-* compilerOptions.outDir - must exist and be a target output directory
+- include - must be an array of directories or files to include
+- compilerOptions.outDir - must exist and be a target output directory
 
 and its workspace dependencies must be referenced in package.json `dependencies` or
 `devDependencies`
@@ -59,6 +50,10 @@ and its workspace dependencies must be referenced in package.json `dependencies`
 Then you can use it with [wsrun](https://github.com/whoeverest/wsrun)
 
     yarn wsrun --staged -r ctsc
+
+To prune old items from the cache (use env var CTSC_TMP_MAX_ITEMS to limit the cache size)
+
+    ctsc --clean
 
 ## how it works
 
