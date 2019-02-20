@@ -47,7 +47,7 @@ The package must have at least the following configuration in tsconfig:
 and its workspace dependencies must be referenced in package.json `dependencies` or
 `devDependencies`
 
-Then you can use it with [wsrun](https://github.com/whoeverest/wsrun)
+Then you can use it with [wsrun](https://github.com/hfour/wsrun)
 
     yarn wsrun --staged -r ctsc
 
