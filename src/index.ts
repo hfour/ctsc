@@ -14,7 +14,7 @@ let mkdirpAsync = util.promisify(mkdirp);
 
 let copyAsync = async (src: string, dest: string, _opts?: any) => {
   await mkdirpAsync(dest);
-  let copyProcess = await cp.spawnSync('bash', ['-c', `cp -Tr ${src} ${dest}`]);
+  let copyProcess = await cp.spawnSync('bash', ['-c', `cp -r ${src}/. ${dest}`]);
   if (copyProcess.status > 0) {
     console.error(copyProcess.stderr.toString());
     process.exit(1);
