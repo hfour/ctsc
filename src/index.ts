@@ -53,14 +53,21 @@ async function main() {
   let CTSC_TMP_MAX_ITEMS = Number(process.env['CTSC_TMP_MAX_ITEMS'] || '300');
   let argv = yargs.options({
     p: {
-      type: 'string'
+      type: 'string',
+      description: 'Project config file'
     },
     clean: {
-      type: 'boolean'
+      type: 'boolean',
+      description: 'Clean up stale cached items'
+    },
+    purge: {
+      type: 'boolean',
+      description: 'Clear the entire cache'
     }
   }).argv;
 
   if (argv.clean) await cleanup({ tmpdir: CTSC_TMP_DIR, maxItems: CTSC_TMP_MAX_ITEMS });
+  else if (argv.purge) await cleanup({ tmpdir: CTSC_TMP_DIR, maxItems: 0 });
   else await compile({ tsconfig: argv.p, tmpdir: CTSC_TMP_DIR });
 }
 

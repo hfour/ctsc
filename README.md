@@ -55,6 +55,10 @@ To prune old items from the cache (use env var CTSC_TMP_MAX_ITEMS to limit the c
 
     ctsc --clean
 
+To purge the entire cache
+
+    ctsc --purge
+
 ## how it works
 
 1. ctsc calculates two types of hash: input files hash IHASH, and output (type) hash, OHASH
