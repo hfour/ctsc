@@ -1,6 +1,6 @@
 {
   "name": "ctsc",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A caching compiler for TypeScript monorepos",
   "bin": {
     "ctsc": "build/index.js"
