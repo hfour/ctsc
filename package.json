@@ -26,5 +26,8 @@
     "require-times": "^1.1.0",
     "tsconfig": "^7.0.0",
     "yargs": "^13.2.1"
-  }
+  },
+  "files": [
+    "build/**/*"
+  ]
 }
