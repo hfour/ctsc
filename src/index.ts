@@ -153,6 +153,7 @@ async function compile(opts: { tsconfig: string | undefined; tmpdir: string }) {
   }
 
   allFiles = allFiles.concat(includes).sort();
+  if (tsConfig.path) allFiles = allFiles.concat(tsConfig.path);
 
   let hash = hashSync(allFiles);
   let hashDir = path.resolve(opts.tmpdir, hash);
