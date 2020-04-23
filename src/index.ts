@@ -15,7 +15,7 @@ let mkdirpAsync = util.promisify(mkdirp);
 let copyAsync = async (src: string, dest: string, _opts?: any) => {
   await mkdirpAsync(dest);
   let copyProcess = await cp.spawnSync('bash', ['-c', `cp -r ${src}/. ${dest}`]);
-  if (copyProcess.status > 0) {
+  if (copyProcess.status! > 0) {
     console.error(copyProcess.stderr.toString());
     process.exit(1);
   }
@@ -26,7 +26,7 @@ let hashSync = (items: string[], criteria: string = '') => {
     ' '
   )} -type f ${criteria} | xargs tail -n +1 | git hash-object --stdin`;
   let hashRes = cp.spawnSync('bash', ['-c', cmd], { encoding: 'utf8' });
-  if (hashRes.status > 0) {
+  if (hashRes.status! > 0) {
     throw new Error(hashRes.stderr);
   }
   let hash = hashRes.stdout.trim();
@@ -41,7 +41,7 @@ let statAsync = util.promisify(fs.stat);
 let utimesAsync = util.promisify(fs.utimes);
 let rmdirAsync = (path: string) => {
   let rm = cp.spawnSync('bash', ['-c', `rm -r ${path}`]);
-  if (rm.status > 0) {
+  if (rm.status! > 0) {
     throw new Error(rm.stderr.toString());
   }
 };
@@ -167,7 +167,7 @@ async function compile(opts: { tsconfig: string | undefined; tmpdir: string }) {
     if (out.stdout) console.log(out.stdout);
     if (out.stderr) console.error(out.stderr);
     if (out.status != 0) {
-      process.exit(out.status);
+      process.exit(out.status!);
     } else {
       let hashOut = hashSync([outDir], "-name '*.d.ts'");
       fs.writeFileSync(path.resolve(outDirFull, HASH_FILE_NAME), hashOut);
