@@ -88,11 +88,21 @@ async function cleanup(opts: { tmpdir: string; maxItems: number }) {
   }
 }
 
+async function load(cwd: string, filename?: string) {
+  let tsConfig = await tscfg.load(cwd, filename);
+  let extend = tsConfig?.config?.extends;
+  if (extend) {
+    let parent = await load(cwd,extend);
+    tsConfig.config = Object.assign(parent.config,tsConfig.config);
+  }
+  return tsConfig;
+}
+
 async function compile(opts: { tsconfig: string | undefined; tmpdir: string }) {
   let process_cwd = process.cwd();
   let tsConfig = null;
   try {
-    tsConfig = await tscfg.load(process_cwd, opts.tsconfig);
+    tsConfig = await load(process_cwd, opts.tsconfig);
   } catch (e) {}
 
   if (!tsConfig || !tsConfig.config) {
