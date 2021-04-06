@@ -1,3 +1,7 @@
+# NOT MAINTAINED
+
+This project is no longer maintained. Please use tsc project mode - it should now be mature enough to work well in most situations.
+
 # ctsc
 
 Experimental caching TypeScript compiler suitable for monorepos and CI.
